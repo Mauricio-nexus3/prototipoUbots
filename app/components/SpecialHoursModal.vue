@@ -196,8 +196,8 @@
                     <label class="relative flex items-center p-4 cursor-pointer rounded-lg border hover:bg-gray-50 transition-colors" :class="form.actionType === 'continue' ? 'border-ubots-yellow bg-yellow-50 ring-1 ring-ubots-yellow' : 'border-[#D9D9D9]'" @click="form.actionType = 'continue'">
                         <input type="radio" value="continue" :checked="form.actionType === 'continue'" class="h-5 w-5 text-ubots-yellow border-[#D9D9D9] focus:ring-ubots-yellow">
                         <span class="ml-3 flex flex-col">
-                            <span class="block text-sm font-medium text-gray-900">Continuar fluxo normal do Bot</span>
-                            <span class="block text-sm text-gray-500">O cliente seguirá para o atendimento conforme a estrutura do time.</span>
+                            <span class="block text-sm font-medium text-gray-900">Transferir atendimento</span>
+                            <span class="block text-sm text-gray-500">O atendimento será transferido para o time conforme a estrutura.</span>
                         </span>
                     </label>
                 </div>

@@ -4,7 +4,10 @@
       v-for="(item, idx) in items" 
       :key="idx" 
       @click="$emit('view', item)"
-      class="group relative bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
+      class="group relative rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
+      :class="[
+        item.repeatAnnualy ? 'border-amber-200 bg-amber-50/30' : 'bg-white border-gray-100'
+      ]"
     >
       <!-- Status Strip -->
       <div 
@@ -20,15 +23,24 @@
                 <IconCalendar class="w-3 h-3" />
                 {{ item.date }}
              </div>
-             <!-- Status Badge -->
-             <div 
-                v-if="getStatusLabel(item)"
-                class="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide"
-                :class="getStatusBadgeClass(item)"
-             >
-                {{ getStatusLabel(item) }}
-             </div>
-           </div>
+              <!-- Status Badge -->
+              <div 
+                 v-if="getStatusLabel(item)"
+                 class="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide"
+                 :class="getStatusBadgeClass(item)"
+              >
+                 {{ getStatusLabel(item) }}
+              </div>
+              <!-- Annual Badge -->
+              <div 
+                v-if="item.repeatAnnualy"
+                class="text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 uppercase tracking-wide flex items-center gap-1"
+                title="Repete anualmente"
+              >
+                <IconRepeat class="w-2.5 h-2.5" />
+                Anual
+              </div>
+            </div>
 
           <div class="flex items-center gap-1">
             <button 
@@ -135,6 +147,9 @@ function getStatusBadgeClass(item) {
     if (status === 'Agendado') {
         return 'bg-blue-100 text-blue-700 border-blue-200';
     }
+    if (status === 'Concluído') {
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
     return '';
 }
 
@@ -142,6 +157,7 @@ function getStatusColor(item) {
     const status = getStatusLabel(item);
     if (status === 'Em execução') return 'bg-green-500';
     if (status === 'Agendado') return 'bg-blue-500';
+    if (status === 'Concluído') return 'bg-gray-400';
     return item.hasWork ? 'bg-ubots-yellow' : 'bg-gray-300';
 }
 
@@ -151,4 +167,5 @@ const IconClock = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stro
 const IconTrash = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', ...props }, [h('path', { d: 'M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6' })])
 const IconEdit = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', ...props }, [h('path', { d: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z' })])
 const IconCoffee = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', ...props }, [h('path', { d: 'M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z' }), h('line', { x1: '6', y1: '1', x2: '6', y2: '4' }), h('line', { x1: '10', y1: '1', x2: '10', y2: '4' }), h('line', { x1: '14', y1: '1', x2: '14', y2: '4' })])
+const IconRepeat = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '3', ...props }, [h('path', { d: 'M17 1l4 4-4 4' }), h('path', { d: 'M3 11V9a4 4 0 014-4h14' }), h('path', { d: 'M7 23l-4-4 4-4' }), h('path', { d: 'M21 13v2a4 4 0 01-4 4H3' })])
 </script>

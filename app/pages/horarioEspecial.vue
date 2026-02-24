@@ -129,15 +129,21 @@
           <div class="flex items-center gap-4 mb-4">
             <h2 class="text-sm font-medium text-gray-600 whitespace-nowrap">Horários especiais de funcionamento</h2>
             <div class="h-[1px] bg-ubots-yellow flex-1"></div>
-            <button 
-              @click="openAddModal"
-              class="text-ubots-yellow text-xs font-bold uppercase py-2 px-4 flex items-center gap-2 hover:bg-yellow-50 rounded"
-            >
-              Adicionar Horário Especial <IconPlus class="w-4 h-4" />
-            </button>
+            <div class="flex items-center gap-2">
+              <button 
+                @click="isHistoryModalOpen = true"
+                class="bg-white text-gray-600 border border-gray-200 px-4 py-2 rounded shadow-sm text-xs font-bold uppercase tracking-wider hover:bg-gray-50 transition-colors flex items-center gap-2 h-10"
+              >
+                Histórico <IconHistory class="w-4 h-4" />
+              </button>
+              <button 
+                @click="openAddModal"
+                class="bg-ubots-yellow text-ubots-blue px-6 py-2 rounded shadow-sm text-xs font-bold uppercase tracking-wider hover:bg-yellow-500 transition-colors flex items-center gap-2 h-10"
+              >
+                Adicionar Horário Especial <IconPlus class="w-4 h-4" />
+              </button>
+            </div>
           </div>
-
-
 
           <SpecialHoursList 
             :items="activeSpecialHours" 
@@ -151,6 +157,81 @@
           </div>
         </section>
       </main>
+
+      <!-- History Side Drawer Modal -->
+      <div v-if="isHistoryModalOpen" class="fixed inset-0 z-[60] flex justify-end">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="isHistoryModalOpen = false"></div>
+        
+        <!-- Drawer Container -->
+        <div class="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300">
+          <!-- Header -->
+          <div class="flex items-center justify-between p-6 border-b">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-gray-100 rounded-lg text-gray-600">
+                 <IconHistory class="w-6 h-6" />
+              </div>
+              <h3 class="text-xl font-bold text-gray-800">Histórico de Horários</h3>
+            </div>
+            <button @click="isHistoryModalOpen = false" class="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <IconClose class="w-6 h-6" />
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 overflow-auto p-0">
+            <div v-if="pastSpecialHours.length === 0" class="flex flex-col items-center justify-center h-64 text-gray-400">
+               <IconHistory class="w-12 h-12 mb-4 opacity-20" />
+               <p>Nenhum registro no histórico.</p>
+            </div>
+            <div v-else class="overflow-hidden">
+               <table class="w-full text-left text-xs">
+                 <thead class="bg-gray-50 text-gray-500 uppercase font-bold sticky top-0">
+                   <tr>
+                     <th class="px-6 py-4">Data Especial</th>
+                     <th class="px-6 py-4 whitespace-nowrap">Data</th>
+                     <th class="px-6 py-4">Horário</th>
+                     <th class="px-6 py-4 text-center">Ações</th>
+                   </tr>
+                 </thead>
+                 <tbody class="divide-y divide-gray-100">
+                   <tr v-for="(item, idx) in pastSpecialHours" :key="idx" class="hover:bg-gray-50 transition-colors group">
+                     <td class="px-6 py-4">
+                        <div class="font-bold text-gray-800">{{ item.name }}</div>
+                        <div class="flex gap-1 mt-1" v-if="item.repeatAnnualy">
+                           <span class="text-[8px] bg-amber-50 text-amber-700 border border-amber-200 px-1 rounded uppercase font-bold">Anual</span>
+                        </div>
+                     </td>
+                     <td class="px-6 py-4 text-gray-600 font-medium">
+                        {{ item.date }}
+                     </td>
+                     <td class="px-6 py-4 text-gray-600">
+                        <div v-if="item.hasWork" class="flex items-center gap-1">
+                           <span class="w-1.5 h-1.5 bg-ubots-yellow rounded-full"></span>
+                           {{ item.start }} - {{ item.end }}
+                        </div>
+                        <div v-else class="italic text-gray-400">Sem expediente</div>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <button @click="handleViewSpecialHour(item)" class="text-gray-400 hover:text-ubots-blue transition-colors p-2 rounded-lg hover:bg-blue-50">
+                           <IconEye class="w-5 h-5" />
+                        </button>
+                     </td>
+                   </tr>
+                 </tbody>
+               </table>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="p-6 border-t bg-gray-50 flex justify-end">
+            <button @click="isHistoryModalOpen = false" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded font-bold hover:bg-gray-100 transition-colors shadow-sm text-sm">
+               Fechar Histórico
+            </button>
+          </div>
+        </div>
+      </div>
+
 
       <!-- Simulation Button -->
       <!-- Discreet Simulation Button -->
@@ -186,6 +267,7 @@ import SpecialHoursDetailsModal from '@/components/SpecialHoursDetailsModal.vue'
 
 const isModalOpen = ref(false)
 const isDetailsModalOpen = ref(false)
+const isHistoryModalOpen = ref(false)
 const selectedSpecialHour = ref({})
 const editingIndex = ref(null)
 const editingItem = ref(null)
@@ -204,31 +286,68 @@ const normalHours = [
 const specialHours = ref([])
 
 
+// Helper to get raw date value for sorting
+function getRawDate(dateStr) {
+    if (!dateStr) return 0;
+    const parts = dateStr.split(' - ');
+    const d = parseDate(parts[0]);
+    return d ? d.getTime() : 0;
+}
+
 // Filter logic for active items
 const activeSpecialHours = computed(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return specialHours.value.filter(item => {
-        const dateStr = item.date;
-        if (!dateStr) return true; // Keep invalid dates to avoid hiding bugs
+    return specialHours.value
+        .filter(item => {
+            const dateStr = item.date;
+            if (!dateStr) return true;
 
-        const parts = dateStr.split(' - ');
-        const firstDateParts = parts[0].split('/');
-        
-        let endDate;
-        
-        if (parts.length > 1) {
-             const endParts = parts[1].split('/');
-             endDate = new Date(endParts[2], endParts[1] - 1, endParts[0]);
-        } else {
-             endDate = new Date(firstDateParts[2], firstDateParts[1] - 1, firstDateParts[0]);
-        }
-        
-        // Keep if endDate is today or future
-        return endDate >= today;
-    })
+            const parts = dateStr.split(' - ');
+            
+            let endDate;
+            if (parts.length > 1) {
+                endDate = parseDate(parts[1]);
+            } else {
+                endDate = parseDate(parts[0]);
+            }
+            
+            return endDate >= today;
+        })
+        .sort((a, b) => getRawDate(a.date) - getRawDate(b.date));
 })
+
+// Filter logic for past items (History)
+const pastSpecialHours = computed(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return specialHours.value
+        .filter(item => {
+            const dateStr = item.date;
+            if (!dateStr) return false;
+
+            const parts = dateStr.split(' - ');
+            
+            let endDate;
+            if (parts.length > 1) {
+                endDate = parseDate(parts[1]);
+            } else {
+                endDate = parseDate(parts[0]);
+            }
+            
+            return endDate < today;
+        })
+        .sort((a, b) => getRawDate(b.date) - getRawDate(a.date)); // Most recent first for history
+})
+
+function parseDate(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+}
 
 function openAddModal() {
   editingIndex.value = null
@@ -263,9 +382,6 @@ function handleEditSpecialHour(item, idx) {
 }
 
 function handleDeleteSpecialHour(idx) {
-    // We need to find the item in the original list if we are using an index from filtered list
-    // But SpecialHoursList emits index of activeSpecialHours.
-    // Ideally we should emit ID. Since we don't have IDs yet, we will simple find the object.
     const itemToDelete = activeSpecialHours.value[idx];
     const originalIndex = specialHours.value.findIndex(i => i === itemToDelete);
     if (originalIndex !== -1) {
@@ -307,17 +423,25 @@ function simulateStatusChange() {
         return;
     }
 
-    // 2. Target ONLY the FIRST item in the filtered/active list, 
-    // BUT we must find it in the original 'specialHours' array to modify it reactively.
+    // 2. Target the first item in the active list (which is now sorted)
     const targetItem = activeSpecialHours.value[0]; 
     
-    // If no active items (already filtered out), reset list to show something? 
-    // Logic says "Agendado -> Em Execução -> Apaga".
-    // If we have active items, proceed.
     if (!targetItem) {
-        // Should catch by length check above but just in case
-        specialHours.value = []; 
-        simulateStatusChange(); // Recursive reset
+        // refill with dummy data for simulation if empty
+        const nextYear = new Date().getFullYear() + 1;
+        specialHours.value = [
+            {
+                name: 'Evento Simulado 1 (Agendado)',
+                date: `01/01/${nextYear}`,
+                hasWork: true,
+                start: '08:00',
+                end: '18:00',
+                teams: ['Simulação'],
+                accounts: [],
+                subaccounts: [],
+                repeatAnnualy: true
+            }
+        ];
         return;
     }
 
@@ -332,8 +456,7 @@ function simulateStatusChange() {
     const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
 
     const parts = item.date.split(' - ');
-    const firstDateParts = parts[0].split('/');
-    const startDate = new Date(firstDateParts[2], firstDateParts[1] - 1, firstDateParts[0]);
+    const startDate = parseDate(parts[0]);
 
     if (startDate > today) {
         // It is Future (Agendado) -> Move to Present (Em Execução)
@@ -344,8 +467,38 @@ function simulateStatusChange() {
         }
         item.name = item.name.replace('(Agendado)', '(Em Execução)');
     } else {
-        // It is Present (Em Execução) or Past -> Delete
-        specialHours.value.splice(originalIndex, 1);
+        // It is Present (Em Execução) or Past
+        if (item.repeatAnnualy) {
+            // Annual Logic: Increment year and go back to "Agendado"
+            const currentParts = item.date.split(' - ');
+            
+            const incrementYear = (dStr) => {
+                const parts = dStr.split('/');
+                return `${parts[0]}/${parts[1]}/${parseInt(parts[2]) + 1}`;
+            };
+
+            if (currentParts.length > 1) {
+                item.date = `${incrementYear(currentParts[0])} - ${incrementYear(currentParts[1])}`;
+            } else {
+                item.date = incrementYear(currentParts[0]);
+            }
+            item.name = item.name.replace('(Em Execução)', '(Agendado)');
+            // Note: Computed properties will re-sort this automatically
+        } else {
+            // Non-annual items simply remain in history (already handled by filter)
+            // But if we want to "complete" them in simulation, they just stay past.
+            // Actually, simulateStatusChange should probably move the date to yesterday for non-annual
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = `${String(yesterday.getDate()).padStart(2, '0')}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${yesterday.getFullYear()}`;
+            
+            if (item.date.includes(' - ')) {
+                item.date = `${yesterdayStr} - ${yesterdayStr}`;
+            } else {
+                item.date = yesterdayStr;
+            }
+            item.name = item.name.replace('(Em Execução)', '(Concluído)');
+        }
     }
 }
 
@@ -374,6 +527,10 @@ const IconTrash = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stro
 const IconPlus = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '3', ...props }, [h('path', { d: 'M12 5v14M5 12h14' })])
 const IconPlay = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', ...props }, [h('path', { d: 'M8 5v14l11-7z' })])
 const IconHelpCircle = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor', ...props }, [h('path', { d: 'M12 2a10 10 0 1010 10A10 10 0 0012 2zm1 14h-2v-2h2zm0-3.13V13a1 1 0 01-2 0v-1.23a1 1 0 01.65-.94A2 2 0 1011 9a1 1 0 01-2 0 4 4 0 115.17 3.84 1 1 0 01-.17.03z' })])
+
+const IconHistory = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', ...props }, [h('path', { d: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' })])
+const IconClose = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', ...props }, [h('path', { d: 'M6 18L18 6M6 6l12 12' })])
+const IconEye = (props) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', ...props }, [h('path', { d: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z' }), h('circle', { cx: '12', cy: '12', r: '3' })])
 </script>
 
 <style>
