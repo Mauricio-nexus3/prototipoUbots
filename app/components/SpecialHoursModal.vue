@@ -19,7 +19,10 @@
                 <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
                     <div :style="{ width: `${(step / 7) * 100}%` }" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-ubots-yellow transition-all duration-500 ease-out"></div>
                 </div>
-                <div class="text-xs text-gray-500 text-right font-medium">Passo {{ step }} de 7</div>
+                <div class="flex justify-between items-center text-xs font-medium">
+                    <div class="text-gray-900 text-sm font-semibold uppercase tracking-wider">{{ currentStepTitle }}</div>
+                    <div class="text-gray-500 text-right">Passo {{ step }} de 7</div>
+                </div>
             </div>
         </div>
 
@@ -28,7 +31,6 @@
             
             <!-- Step 1: Nome -->
             <div v-if="step === 1" class="space-y-4">
-                <h4 class="text-lg font-medium text-gray-900">Definição do Nome</h4>
                 <p class="text-sm text-gray-500">Dê um nome para identificar este horário especial.</p>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nome da data especial</label>
@@ -38,7 +40,6 @@
 
             <!-- Step 2: Datas -->
             <div v-if="step === 2" class="space-y-4">
-                 <h4 class="text-lg font-medium text-gray-900">Configuração de Datas</h4>
                  <p class="text-sm text-gray-500">Defina se o horário especial se aplica a um ou mais dias.</p>
                 
                 <div>
@@ -68,7 +69,6 @@
 
             <!-- Step 3: Expediente -->
             <div v-if="step === 3" class="space-y-6">
-                <h4 class="text-lg font-medium text-gray-900">Horário de Expediente</h4>
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-base font-medium text-gray-700">Haverá expediente nesta data?</span>
@@ -98,7 +98,6 @@
 
             <!-- Step 4: Direcionamento (Multi-seleção em Dropdowns) -->
             <div v-if="step === 4" class="space-y-6">
-                 <h4 class="text-lg font-medium text-gray-900">Direcionamento</h4>
                  <p class="text-sm text-gray-500">Selecione quem será afetado por este horário especial.</p>
                 
                 <div class="space-y-4">
@@ -111,10 +110,16 @@
                             </span>
                             <svg class="w-5 h-5 text-gray-400 transition-transform" :class="activeDropdown === 'accounts' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
-                        <div v-if="activeDropdown === 'accounts'" class="absolute z-20 w-full mt-1 bg-white border border-[#D9D9D9] rounded-md shadow-lg p-2 max-h-48 overflow-y-auto">
-                            <div v-for="acc in accounts" :key="acc.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" @click.stop="toggleSelection(form.accountIds, acc.id)">
-                                <input type="checkbox" :checked="form.accountIds.includes(acc.id)" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
-                                <span class="ml-2 text-sm text-gray-700">{{ acc.name }}</span>
+                        <div v-if="activeDropdown === 'accounts'" class="absolute z-20 w-full mt-1 bg-white border border-[#D9D9D9] rounded-md shadow-lg p-2 max-h-64 overflow-hidden flex flex-col">
+                            <div class="p-1 mb-2">
+                                <input v-model="searchQueries.accounts" type="text" class="w-full h-10 px-3 text-sm border border-gray-200 rounded focus:border-ubots-yellow focus:ring-1 focus:ring-ubots-yellow/50" placeholder="Pesquisar conta..." @click.stop>
+                            </div>
+                            <div class="overflow-y-auto flex-1">
+                                <div v-for="acc in filteredAccounts" :key="acc.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" @click.stop="toggleSelection(form.accountIds, acc.id)">
+                                    <input type="checkbox" :checked="form.accountIds.includes(acc.id)" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
+                                    <span class="ml-2 text-sm text-gray-700">{{ acc.name }}</span>
+                                </div>
+                                <div v-if="filteredAccounts.length === 0" class="p-4 text-center text-sm text-gray-500">Nenhuma conta encontrada</div>
                             </div>
                         </div>
                     </div>
@@ -128,10 +133,16 @@
                             </span>
                             <svg class="w-5 h-5 text-gray-400 transition-transform" :class="activeDropdown === 'subaccounts' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
-                        <div v-if="activeDropdown === 'subaccounts'" class="absolute z-20 w-full mt-1 bg-white border border-[#D9D9D9] rounded-md shadow-lg p-2 max-h-48 overflow-y-auto">
-                            <div v-for="sub in subaccounts" :key="sub.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" @click.stop="toggleSelection(form.subaccountIds, sub.id)">
-                                <input type="checkbox" :checked="form.subaccountIds.includes(sub.id)" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
-                                <span class="ml-2 text-sm text-gray-700">{{ sub.name }}</span>
+                        <div v-if="activeDropdown === 'subaccounts'" class="absolute z-20 w-full mt-1 bg-white border border-[#D9D9D9] rounded-md shadow-lg p-2 max-h-64 overflow-hidden flex flex-col">
+                            <div class="p-1 mb-2">
+                                <input v-model="searchQueries.subaccounts" type="text" class="w-full h-10 px-3 text-sm border border-gray-200 rounded focus:border-ubots-yellow focus:ring-1 focus:ring-ubots-yellow/50" placeholder="Pesquisar subconta..." @click.stop>
+                            </div>
+                            <div class="overflow-y-auto flex-1">
+                                <div v-for="sub in filteredSubaccountsList" :key="sub.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" @click.stop="toggleSelection(form.subaccountIds, sub.id)">
+                                    <input type="checkbox" :checked="form.subaccountIds.includes(sub.id)" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
+                                    <span class="ml-2 text-sm text-gray-700">{{ sub.name }}</span>
+                                </div>
+                                <div v-if="filteredSubaccountsList.length === 0" class="p-4 text-center text-sm text-gray-500">Nenhuma subconta encontrada</div>
                             </div>
                         </div>
                     </div>
@@ -145,14 +156,20 @@
                             </span>
                             <svg class="w-5 h-5 text-gray-400 transition-transform" :class="activeDropdown === 'teams' ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
-                        <div v-if="activeDropdown === 'teams'" class="absolute z-20 w-full mt-1 bg-white border border-[#D9D9D9] rounded-md shadow-lg p-2 max-h-48 overflow-y-auto">
-                             <div class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer border-b mb-1 font-bold" @click.stop="toggleAllTeams">
-                                <input type="checkbox" :checked="form.teamIds.length === availableTeams.length" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
-                                <span class="ml-2 text-sm text-ubots-blue">Todos os times</span>
+                        <div v-if="activeDropdown === 'teams'" class="absolute z-20 w-full mt-1 bg-white border border-[#D9D9D9] rounded-md shadow-lg p-2 max-h-64 overflow-hidden flex flex-col">
+                            <div class="p-1 mb-2">
+                                <input v-model="searchQueries.teams" type="text" class="w-full h-10 px-3 text-sm border border-gray-200 rounded focus:border-ubots-yellow focus:ring-1 focus:ring-ubots-yellow/50" placeholder="Pesquisar time..." @click.stop>
                             </div>
-                            <div v-for="team in availableTeams" :key="team.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" @click.stop="toggleSelection(form.teamIds, team.id)">
-                                <input type="checkbox" :checked="form.teamIds.includes(team.id)" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
-                                <span class="ml-2 text-sm text-gray-700">{{ team.name }}</span>
+                            <div class="overflow-y-auto flex-1">
+                                <div class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer border-b mb-1 font-bold" @click.stop="toggleAllTeams">
+                                    <input type="checkbox" :checked="form.teamIds.length === availableTeams.length" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
+                                    <span class="ml-2 text-sm text-ubots-blue">Todos os times</span>
+                                </div>
+                                <div v-for="team in filteredTeams" :key="team.id" class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer" @click.stop="toggleSelection(form.teamIds, team.id)">
+                                    <input type="checkbox" :checked="form.teamIds.includes(team.id)" class="w-4 h-4 rounded border-[#D9D9D9] text-ubots-yellow focus:ring-ubots-yellow" @click.stop>
+                                    <span class="ml-2 text-sm text-gray-700">{{ team.name }}</span>
+                                </div>
+                                <div v-if="filteredTeams.length === 0" class="p-4 text-center text-sm text-gray-500">Nenhum time encontrado</div>
                             </div>
                         </div>
                     </div>
@@ -161,7 +178,6 @@
 
             <!-- Step 5: Mensagem -->
             <div v-if="step === 5" class="space-y-4">
-                <h4 class="text-lg font-medium text-gray-900">Mensagem de Atendimento</h4>
                 <p class="text-sm text-gray-500">Configure a mensagem enviada aos clientes durante este período.</p>
 
                 <div>
@@ -181,7 +197,6 @@
 
             <!-- Step 6: Decisão Final -->
             <div v-if="step === 6" class="space-y-4">
-                <h4 class="text-lg font-medium text-gray-900">Ação do Fluxo</h4>
                 <p class="text-sm text-gray-500">O que deve acontecer ao receber uma mensagem neste período?</p>
 
                 <div class="grid grid-cols-1 gap-4">
@@ -189,7 +204,7 @@
                         <input type="radio" value="end" :checked="form.actionType === 'end'" class="h-5 w-5 text-ubots-yellow border-[#D9D9D9] focus:ring-ubots-yellow">
                         <span class="ml-3 flex flex-col">
                             <span class="block text-sm font-medium text-gray-900">Encerrar protocolo</span>
-                            <span class="block text-sm text-gray-500">O atendimento será finalizado após a mensagem.</span>
+                            <span class="block text-sm text-gray-500">A mensagem será encaminhada e o protocolo será encerrado</span>
                         </span>
                     </label>
 
@@ -197,7 +212,7 @@
                         <input type="radio" value="continue" :checked="form.actionType === 'continue'" class="h-5 w-5 text-ubots-yellow border-[#D9D9D9] focus:ring-ubots-yellow">
                         <span class="ml-3 flex flex-col">
                             <span class="block text-sm font-medium text-gray-900">Transferir atendimento</span>
-                            <span class="block text-sm text-gray-500">O atendimento será transferido para o time conforme a estrutura.</span>
+                            <span class="block text-sm text-gray-500">A mensagem será enviada mas o atendimento será transferido mesmo assim ao time</span>
                         </span>
                     </label>
                 </div>
@@ -205,7 +220,6 @@
 
             <!-- Step 7: Revisão Final (Mantendo o estilo aprovado) -->
              <div v-if="step === 7" class="space-y-4">
-                 <h4 class="text-lg font-medium text-gray-900">Revisão Final</h4>
                  
                 <div class="bg-blue-50 p-6 rounded-md border border-blue-100 shadow-sm">
                      <div class="flex gap-4">
@@ -286,6 +300,24 @@ const emit = defineEmits(['close', 'save'])
 
 const step = ref(1)
 const activeDropdown = ref(null)
+const searchQueries = reactive({
+    accounts: '',
+    subaccounts: '',
+    teams: ''
+})
+
+const currentStepTitle = computed(() => {
+    const titles = {
+        1: 'Definição do Nome',
+        2: 'Configuração de Datas',
+        3: 'Horário de Expediente',
+        4: 'Direcionamento',
+        5: 'Mensagem de Atendimento',
+        6: 'Ação do Fluxo',
+        7: 'Revisão Final'
+    }
+    return titles[step.value] || ''
+})
 
 const form = reactive({
     name: '',
@@ -371,6 +403,24 @@ const filteredSubaccounts = computed(() => {
     return subaccounts.filter(sub => sub.accountId === form.accountId)
 })
 
+const filteredAccounts = computed(() => {
+    if (!searchQueries.accounts) return accounts
+    const q = searchQueries.accounts.toLowerCase()
+    return accounts.filter(acc => acc.name.toLowerCase().includes(q))
+})
+
+const filteredSubaccountsList = computed(() => {
+    if (!searchQueries.subaccounts) return subaccounts
+    const q = searchQueries.subaccounts.toLowerCase()
+    return subaccounts.filter(sub => sub.name.toLowerCase().includes(q))
+})
+
+const filteredTeams = computed(() => {
+    if (!searchQueries.teams) return availableTeams
+    const q = searchQueries.teams.toLowerCase()
+    return availableTeams.filter(team => team.name.toLowerCase().includes(q))
+})
+
 // === Methods ===
 
 function updateMessageFromTemplate() {
@@ -385,6 +435,12 @@ function updateMessageFromTemplate() {
 }
 
 function toggleDropdown(name) {
+    if (activeDropdown.value !== name) {
+        // Reset search query when opening a new dropdown
+        searchQueries.accounts = ''
+        searchQueries.subaccounts = ''
+        searchQueries.teams = ''
+    }
     activeDropdown.value = activeDropdown.value === name ? null : name
 }
 
@@ -429,6 +485,9 @@ function resetForm() {
     form.messageTemplate = ''
     form.message = ''
     form.actionType = 'continue'
+    searchQueries.accounts = ''
+    searchQueries.subaccounts = ''
+    searchQueries.teams = ''
     step.value = 1
 }
 
